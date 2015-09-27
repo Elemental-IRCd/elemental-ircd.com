@@ -11,4 +11,6 @@ EXPOSE 5000
 
 RUN go get github.com/Xe/tools/quickserv/...
 
+ENV VIRTUAL_HOST elemental-ircd.com
+
 CMD quickserv -port 5000 -dir /eircdsite/site.static
