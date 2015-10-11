@@ -1,0 +1,116 @@
+From 8370833d6007cf6aedad6771c3629fb54bae4c02 Mon Sep 17 00:00:00 2001
+From: Christine Dodrill <xena@yolo-swag.com>
+Date: Sun, 27 Sep 2015 11:44:51 -0700
+Subject: [PATCH] don't leak memory on clearing the monitor list
+
+---
+ modules/m_monitor.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 51 insertions(+), 5 deletions(-)
+
+diff --git a/modules/m_monitor.c b/modules/m_monitor.c
+index a6ce575..e67a151 100644
+--- a/modules/m_monitor.c
++++ b/modules/m_monitor.c
+@@ -1,5 +1,5 @@
+ /* modules/m_monitor.c
+- * 
++ *
+  *  Copyright (C) 2005 Lee Hardy <lee@leeh.co.uk>
+  *  Copyright (C) 2005 ircd-ratbox development team
+  *
+@@ -40,6 +40,9 @@
+ #include "s_conf.h"
+ 
+ static int m_monitor(struct Client *, struct Client *, int, const char **);
++static int modinit(void);
++static void moddeinit(void);
++static void cleanup_monitor(void *unused);
+ 
+ struct Message monitor_msgtab = {
+ 	"MONITOR", 0, 0, 0, MFLG_SLOW,
+@@ -47,7 +50,22 @@ struct Message monitor_msgtab = {
+ };
+ 
+ mapi_clist_av1 monitor_clist[] = { &monitor_msgtab, NULL };
+-DECLARE_MODULE_AV1(monitor, NULL, NULL, monitor_clist, NULL, NULL, "$Revision: 312 $");
++DECLARE_MODULE_AV1(monitor, modinit, moddeinit, monitor_clist, NULL, NULL, "$Revision: 312 $");
++
++static struct ev_entry *cleanup_monitor_ev;
++static int
++modinit(void)
++{
++	cleanup_monitor_ev = rb_event_addish("cleanup_monitor", cleanup_monitor, NULL, 30);
++	return 0;
++
++}
++
++static void
++moddeinit(void)
++{
++	rb_event_delete(cleanup_monitor_ev);
++}
+ 
+ static void
+ add_monitor(struct Client *client_p, const char *nicks)
+@@ -110,7 +128,7 @@ add_monitor(struct Client *client_p, const char *nicks)
+ 
+ 		if((target_p = find_named_person(name)) != NULL)
+ 		{
+-			if(cur_onlen + strlen(target_p->name) + 
++			if(cur_onlen + strlen(target_p->name) +
+ 			   strlen(target_p->username) + strlen(target_p->host) + 3 >= BUFSIZE-3)
+ 			{
+ 				sendto_one(client_p, "%s", onbuf);
+@@ -227,7 +245,7 @@ list_monitor(struct Client *client_p)
+ 	}
+ 
+ 	sendto_one(client_p, "%s", buf);
+-	sendto_one(client_p, form_str(RPL_ENDOFMONLIST), 
++	sendto_one(client_p, form_str(RPL_ENDOFMONLIST),
+ 			me.name, client_p->name);
+ }
+ 
+@@ -256,7 +274,7 @@ show_monitor_status(struct Client *client_p)
+ 
+ 		if((target_p = find_named_person(monptr->name)) != NULL)
+ 		{
+-			if(cur_onlen + strlen(target_p->name) + 
++			if(cur_onlen + strlen(target_p->name) +
+ 			   strlen(target_p->username) + strlen(target_p->host) + 3 >= BUFSIZE-3)
+ 			{
+ 				sendto_one(client_p, "%s", onbuf);
+@@ -351,3 +369,31 @@ m_monitor(struct Client *client_p, struct Client *source_p, int parc, const char
+ 	return 0;
+ }
+ 
++static void
++cleanup_monitor(void *unused)
++{
++	struct monitor *last_ptr = NULL;
++	struct monitor *next_ptr, *ptr;
++	int i;
++
++	for(i = 0; i < MONITOR_HASH_SIZE; i++)
++	{
++		last_ptr = NULL;
++		for(ptr = monitorTable[i]; ptr; ptr = next_ptr)
++		{
++			next_ptr = ptr->hnext;
++
++			if(!rb_dlink_list_length(&ptr->users))
++			{
++				if(last_ptr)
++					last_ptr->hnext = next_ptr;
++				else
++					monitorTable[i] = next_ptr;
++
++				free_monitor(ptr);
++			}
++			else
++				last_ptr = ptr;
++		}
++	}
++}
+-- 
+2.1.4
+

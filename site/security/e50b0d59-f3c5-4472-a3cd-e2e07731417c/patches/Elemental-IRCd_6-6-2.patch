@@ -1,0 +1,78 @@
+commit 1eef9d309d8ed18f58dafa0151e435fb2b35169c
+Author: Andrew Cook <ariscop@gmail.com>
+Date:   Sun Sep 27 10:54:58 2015 +1000
+
+    Import cleanup_monitor event from ratbox
+    
+    https://github.com/dcorbe/ircd-ratbox/blob/c98429ab/trunk/modules/m_monitor.c
+
+diff --git a/modules/m_monitor.c b/modules/m_monitor.c
+index 03774ad..9e0e559 100644
+--- a/modules/m_monitor.c
++++ b/modules/m_monitor.c
+@@ -39,6 +39,9 @@
+ #include "s_conf.h"
+ 
+ static int m_monitor(struct Client *, struct Client *, int, const char **);
++static int modinit(void);
++static void moddeinit(void);
++static void cleanup_monitor(void *unused);
+ 
+ struct Message monitor_msgtab = {
+     "MONITOR", 0, 0, 0, MFLG_SLOW,
+@@ -46,7 +49,22 @@ struct Message monitor_msgtab = {
+ };
+ 
+ mapi_clist_av1 monitor_clist[] = { &monitor_msgtab, NULL };
+-DECLARE_MODULE_AV1(monitor, NULL, NULL, monitor_clist, NULL, NULL, "$Revision: 312 $");
++DECLARE_MODULE_AV1(monitor, modinit, moddeinit, monitor_clist, NULL, NULL, "$Revision: 312 $");
++
++static struct ev_entry *cleanup_monitor_ev;
++static int
++modinit(void)
++{
++    cleanup_monitor_ev = rb_event_addish("cleanup_monitor", cleanup_monitor, NULL, 30);
++    return 0;
++
++}
++
++static void
++moddeinit(void)
++{
++    rb_event_delete(cleanup_monitor_ev);
++}
+ 
+ static void
+ add_monitor(struct Client *client_p, const char *nicks)
+@@ -325,3 +343,31 @@ m_monitor(struct Client *client_p, struct Client *source_p, int parc, const char
+     return 0;
+ }
+ 
++static void
++cleanup_monitor(void *unused)
++{
++    struct monitor *last_ptr = NULL;
++    struct monitor *next_ptr, *ptr;
++    int i;
++
++    for(i = 0; i < MONITOR_HASH_SIZE; i++)
++    {
++        last_ptr = NULL;
++        for(ptr = monitorTable[i]; ptr; ptr = next_ptr)
++        {
++            next_ptr = ptr->hnext;
++
++            if(!rb_dlink_list_length(&ptr->users))
++            {
++                if(last_ptr)
++                    last_ptr->hnext = next_ptr;
++                else
++                    monitorTable[i] = next_ptr;
++
++                free_monitor(ptr);
++            }
++            else
++                last_ptr = ptr;
++        }
++    }
++}
