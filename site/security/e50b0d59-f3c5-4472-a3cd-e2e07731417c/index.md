@@ -70,10 +70,7 @@ Patches
 
 ### ircd-ratbox
 
-Upstream is about to release ircd-ratbox 3.0.9 that removes `MONITOR`
-completely as well as fixing some other obscure bugs, so we are providing no
-patch for these users as it will be redundant. If you really need to patch,
-apply the Charybdis patch (you will need to do things by hand unfortunately).
+Upstream is about to release ircd-ratbox 3.0.9 that fixes this.
 
 Otherwise, unload the module as directed above.
 
