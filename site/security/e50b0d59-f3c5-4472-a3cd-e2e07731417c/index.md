@@ -65,6 +65,10 @@ memory that has been leaked in the past.
 A full set of technical details will be released as soon as it is confirmed
 that major IRC networks affected by this have been patched.
 
+These patches are not intended as a permanent fix. They are merely to put out 
+the fires and prevent people from having to restart servers. The corrected 
+patches are being coordinated with upstreams as appropriate.
+
 Patches
 -------
 
@@ -105,6 +109,9 @@ a set of upgrade directions is attached below:
 If your version of Elemental-IRCd is not taking this patch (in testing this is
 only the case if your version is older than 6.6.x), please try to apply the
 Charybdis patch instead.
+
+Elemental-IRCd 6.6.3 will contain the corrected fixes. A release candidate can 
+be downloaded [here](https://github.com/Elemental-IRCd/elemental-ircd/releases/tag/elemental-ircd-6.6.3-rc3).
 
 etc
 ---
