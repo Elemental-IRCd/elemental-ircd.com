@@ -9,7 +9,7 @@ ADD . /eircdsite
 ENV WIKI_VERSION 20151110
 RUN cd /eircdsite/site &&\
     git clone https://github.com/Elemental-IRCd/elemental-ircd.wiki.git wiki &&\
-    cd wiki && rm -rf .git && mv Home.md index.md && touch technical/index.md && rm Footer.md
+    cd wiki && rm -rf .git && mv Home.md index.md && touch technical/index.md && rm _Footer.md
 
 RUN cd /eircdsite && sw site
 
