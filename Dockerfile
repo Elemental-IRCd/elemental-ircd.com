@@ -1,9 +1,15 @@
 FROM golang:1.5.1
 
 RUN git clone https://github.com/jroimartin/sw /sw &&\
-	cd /sw && make install
+    cd /sw && make install &&\
+    go get github.com/russross/blackfriday-tool
 
 ADD . /eircdsite
+
+ENV WIKI_VERSION 20151110
+RUN cd /eircdsite/site &&\
+    git clone https://github.com/Elemental-IRCd/elemental-ircd.wiki.git wiki &&\
+    cd wiki && rm -rf .git && mv Home.md index.md && touch technical/index.md
 
 RUN cd /eircdsite && sw site
 
