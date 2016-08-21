@@ -1,4 +1,4 @@
-FROM golang:1.5.1
+FROM golang:latest
 
 RUN git clone https://github.com/jroimartin/sw /sw &&\
     cd /sw && make install &&\
@@ -11,7 +11,7 @@ RUN cd /eircdsite/site &&\
     git clone https://github.com/Elemental-IRCd/elemental-ircd.wiki.git wiki &&\
     cd wiki && rm -rf .git && mv Home.md index.md && touch technical/index.md && rm _Footer.md
 
-RUN cd /eircdsite && sw site
+RUN cd /eircdsite && make build
 
 EXPOSE 5000
 
