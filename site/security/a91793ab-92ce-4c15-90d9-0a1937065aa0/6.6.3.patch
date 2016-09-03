@@ -1,0 +1,40 @@
+From a7f0776713b5cfc14e7249e80e902c11f81fd79d Mon Sep 17 00:00:00 2001
+From: Cadey Dodrill <me@christine.website>
+Date: Sat, 3 Sep 2016 11:52:28 -0700
+Subject: [PATCH] SASL: Disallow beginning : and space anywhere in AUTHENTICATE
+ parameter
+
+> This is a FIX FOR A SECURITY VULNERABILITY. All Charybdis users must
+> apply this fix if you support SASL on your servers, or unload m_sasl.so
+> in the meantime.
+
+Specifically, this is an issue in how SASL is handled in
+Charybdis-derived IRC daemons. The only practical attacks so far are
+to fraudlently log in as other services accounts using SASL EXTERNAL.
+There might be other vulnerabilities as a result of this, so it is best
+to apply this patch ASAP.
+---
+ modules/m_sasl.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/modules/m_sasl.c b/modules/m_sasl.c
+index 63cd287..39142f1 100644
+--- a/modules/m_sasl.c
++++ b/modules/m_sasl.c
+@@ -82,6 +82,11 @@ mr_authenticate(struct Client *client_p, struct Client *source_p,
+         return 0;
+     }
+ 
++    if (*parv[1] == ':' || strchr(parv[1], ' ')) {
++        exit_client(client_p, client_p, client_p, "Malformed AUTHENTICATE");
++        return;
++    }
++
+     if(source_p->preClient->sasl_complete) {
+         sendto_one(source_p, form_str(ERR_SASLALREADY), me.name, EmptyString(source_p->name) ? "*" : source_p->name);
+         return 0;
+@@ -219,4 +224,3 @@ abort_sasl_exit(hook_data_client_exit *data)
+     if (data->target->preClient)
+         abort_sasl(data->target);
+ }
+-
