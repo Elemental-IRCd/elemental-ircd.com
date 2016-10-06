@@ -15,4 +15,4 @@ RUN apk add --no-cache make git &&\
     go get github.com/Xe/tools/quickserv/... &&\
     apk del make git
 
-CMD quickserv -port 9090 -dir /eircdsite/site.static
+CMD /eircdsite/run.sh
